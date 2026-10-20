@@ -10,12 +10,13 @@ hl.bind(mainMod .. " + T", hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("pgrep -x rofi >/dev/null && pkill -x rofi || " .. menu)) -- Toggle launcher
 hl.bind(mainMod .. " + S", hl.dsp.exec_cmd("qs ipc call wheel toggle")) -- Wheel launcher
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
+hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd("zen-browser")) -- Zen Browser
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 
 hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd("hyprlock")) -- Lock screen
 
-hl.bind(mainMod .. " + GRAVE", hl.dsp.exec_cmd("qs ipc call powermenu toggle")) -- Power menu
+hl.bind(mainMod .. " + code:49", hl.dsp.exec_cmd("qs ipc call powermenu toggle")) -- Power menu
 
 hl.bind(mainMod .. " + I", hl.dsp.exec_cmd("qs ipc call settings toggle")) -- Settings
 
@@ -96,41 +97,38 @@ hl.bind(mainMod .. " + mouse_up", function() zoomfunction(0.5) end, { repeating 
 hl.bind(mainMod .. " + code:82", function() zoomfunction(-0.3) end, { repeating = true })
 hl.bind(mainMod .. " + code:86", function() zoomfunction(0.3) end, { repeating = true })
 
--- VERIFY: exit dispatcher. Docs explicitly say to double check the exit
--- dispatcher call when moving to Lua.
 hl.bind(mainMod .. " + SHIFT + E", hl.dsp.exit())
 
--- Focus (H/J/K/L = left/down/up/right, vim-style, matching your original)
+-- Focus (H/J/K/L = left/down/up/right, vim-style)
 hl.bind(mainMod .. " + H", hl.dsp.focus({ direction = "left" }))
 hl.bind(mainMod .. " + J", hl.dsp.focus({ direction = "down" }))
 hl.bind(mainMod .. " + K", hl.dsp.focus({ direction = "up" }))
 hl.bind(mainMod .. " + L", hl.dsp.focus({ direction = "right" }))
 
--- VERIFY: move active window within layout (old `movewindow` dispatcher).
--- Confirmed pattern is hl.dsp.window.move({ workspace = N }) for sending to a
--- workspace (used below) - the direction-swap variant isn't shown in the
--- official example, so double check this fires like the old movewindow did.
+-- Move active window within layout
 hl.bind(mainMod .. " + SHIFT + H", hl.dsp.window.move({ direction = "left" }))
 hl.bind(mainMod .. " + SHIFT + J", hl.dsp.window.move({ direction = "down" }))
 hl.bind(mainMod .. " + SHIFT + K", hl.dsp.window.move({ direction = "up" }))
 hl.bind(mainMod .. " + SHIFT + L", hl.dsp.window.move({ direction = "right" }))
 
--- VERIFY: resize active window by pixel delta (old `resizeactive`, repeating
--- while held via `binde`). Param names guessed as x/y - confirm with hyprctl eval.
+-- Resize active window by pixel delta
 hl.bind(mainMod .. " + CTRL + H", hl.dsp.window.resize({ x = -40, y = 0 }), { repeating = true })
 hl.bind(mainMod .. " + CTRL + L", hl.dsp.window.resize({ x = 40, y = 0 }), { repeating = true })
 hl.bind(mainMod .. " + CTRL + K", hl.dsp.window.resize({ x = 0, y = -40 }), { repeating = true })
 hl.bind(mainMod .. " + CTRL + J", hl.dsp.window.resize({ x = 0, y = 40 }), { repeating = true })
 
--- Workspaces 1-10, and move-to-workspace with SHIFT (confirmed pattern from
--- the official example config)
+-- Przełączanie workspace strzałkami w lewo i w prawo (tworzy nowe pulpity po dojściu do końca)
+hl.bind(mainMod .. " + Left", hl.dsp.focus({ workspace = "r-1" }))
+hl.bind(mainMod .. " + Right", hl.dsp.focus({ workspace = "r+1" }))
+
+-- Workspaces 1-10, and move-to-workspace with SHIFT
 for i = 1, 10 do
-    local key = i % 10 -- 10 maps to key 0
+    local key = i % 10
     hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }))
     hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }))
 end
 
--- Media keys (confirmed pattern from the official example config)
+-- Media keys
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
 hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { locked = true, repeating = true })
 hl.bind("XF86AudioMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true })

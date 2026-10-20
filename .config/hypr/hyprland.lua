@@ -1,13 +1,12 @@
--- ~/.config/hypr/hyprland.lua
 -- Docs: https://wiki.hypr.land/Configuring/Start/
 
 ---- MY PROGRAMS ----
 
-mainMod    = "SUPER"
-terminal   = "kitty"
-menu       = "rofi -show drun"
+mainMod     = "SUPER"
+terminal    = "kitty"
+menu        = "rofi -show drun"
 fileManager = "thunar"
-browser    = "brave"
+browser     = "brave"
 
 ---- AUTOSTART ----
 
@@ -18,8 +17,8 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("wl-paste --type image --watch cliphist store")
     hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
 
-    hl.exec_cmd("awww-daemon")
-    hl.exec_cmd("~/.config/hypr/scripts/wallpaper-restore.sh")
+    -- Zastąpiono starą awww i skrypt stabilnym swaybg
+    hl.exec_cmd("swaybg -i /home/marqs/Obrazy/Tapety/uwp4960632.jpeg -m fill &")
     hl.exec_cmd("sleep 2 && qs")
 end)
 
@@ -33,7 +32,7 @@ hl.env("MOZ_ENABLE_WAYLAND", "1")
 
 hl.config({
     input = {
-        kb_layout = "us,latam",
+        kb_layout = "de,latam",
         follow_mouse = 1,
         sensitivity = 0.5,
         touchpad = {

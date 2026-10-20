@@ -17,9 +17,9 @@ Scope {
         scale: 1.0, bgOpacity: 0.7, border: false,
         statsMode: "compact", tooltips: true, tooltipHints: true,
         hidden: "stats,wall,settings",
-        startMods: "stats,ws",
+        startMods: "stats,ws,window",
         centerMods: "clock",
-        endMods: "media,volume,battery,net,notif,wall,settings,power"
+        endMods: "media,update,volume,battery,net,notif,wall,settings,power"
     })
     readonly property var positions: ["top", "right", "bottom", "left"]
     readonly property var styles: ["floating", "joined", "strip"]
@@ -133,12 +133,15 @@ Scope {
         { id: "settings", l: "Settings",      cmd: "qs ipc call settings toggle", g: "\uDB81\uDC93",
                                               tip: "Settings", hint: "Open settings" },
         { id: "power",    l: "Power",         cmd: "qs ipc call powermenu toggle", g: "\u23FB",
-                                              tip: "Power menu", hint: "Open", fixed: true }
+                                              tip: "Power menu", hint: "Open", fixed: true },
+        { id: "update",   l: "Cachy-Update" },
+        { id: "window",   l: "Active Window" }
     ]
     readonly property var moduleIds: moduleDefs.map(d => d.id)
     readonly property var defMap: moduleDefs.reduce((m, d) => { m[d.id] = d; return m; }, {})
     readonly property var comps: ({
-        stats: statsC, ws: wsC, media: mediaC, volume: volumeC, battery: batteryC, icon: iconC
+        stats: statsC, ws: wsC, window: windowC, media: mediaC, volume: volumeC, battery: batteryC,
+        update: updateC, icon: iconC
     })
 
     function csv(str) { return str === "" ? [] : str.split(","); }
@@ -159,6 +162,7 @@ Scope {
         case "stats":   return !vertical || cfg.statsMode === "compact";   // compact fits vertical bars
         case "media":   return Marquee.player !== null && Marquee.title !== "";
         case "battery": return battery !== null;
+        case "window":  return !vertical;
         default:        return true;
         }
     }
@@ -171,8 +175,20 @@ Scope {
     }
     readonly property var endList: {
         const a = csv(cfg.endMods).filter(valid);
-        return a.concat(moduleIds.filter(x =>
+        const all = a.concat(moduleIds.filter(x =>
             startList.indexOf(x) < 0 && centerList.indexOf(x) < 0 && a.indexOf(x) < 0));
+
+        // Keep Cachy-Update between the media player and volume controls.
+        const updateIndex = all.indexOf("update");
+        if (updateIndex >= 0) all.splice(updateIndex, 1);
+        const mediaIndex = all.indexOf("media");
+        const volumeIndex = all.indexOf("volume");
+        if (mediaIndex >= 0 && volumeIndex > mediaIndex)
+            all.splice(mediaIndex + 1, 0, "update");
+        else
+            all.push("update");
+
+        return all;
     }
 
     function listOf(sec) { return (sec === "start" ? startList : sec === "center" ? centerList : endList).slice(); }
@@ -210,6 +226,9 @@ Scope {
         target: cfg
         function onPositionChanged() { root.rebuildBar(); }
         function onStyleChanged() { root.rebuildBar(); }
+        function onStartModsChanged() { root.rebuildBar(); }
+        function onCenterModsChanged() { root.rebuildBar(); }
+        function onEndModsChanged() { root.rebuildBar(); }
     }
 
     IpcHandler {
@@ -789,6 +808,30 @@ Scope {
     }
 
     // ───────────────────────── Module components ─────────────────────────
+    // Original Cachy-Update icon; opens the update tool in Kitty.
+    Component {
+        id: updateC
+        Interactive {
+            id: updateButton
+            implicitWidth: root.vertical ? root.panelThick : root.sz.icon + 20
+            implicitHeight: root.vertical ? root.sz.icon + 12 : root.panelThick - 2
+            Layout.alignment: Qt.AlignCenter
+            tip: "Cachy-Update"
+            primaryHint: "Open system updater"
+            onPrimary: root.run("kitty -e cachy-update")
+
+            Image {
+                anchors.centerIn: parent
+                width: root.sz.icon
+                height: root.sz.icon
+                source: "file:///usr/share/icons/hicolor/scalable/apps/cachy-update-blue.svg"
+                fillMode: Image.PreserveAspectFit
+                smooth: true
+                mipmap: true
+            }
+        }
+    }
+
     // Generic icon button: net / notif / wall / settings / power (driven by moduleDefs)
     Component {
         id: iconC
@@ -850,18 +893,48 @@ Scope {
                     delegate: Rectangle {
                         id: dot
                         required property var modelData
+
                         visible: modelData.id > 0
                         Layout.alignment: Qt.AlignCenter
-                        implicitWidth: root.vertical ? 10 : (modelData.focused ? 32 : 10)
-                        implicitHeight: root.vertical ? (modelData.focused ? 24 : 10) : 10
-                        radius: 5
+
+                        implicitWidth: root.vertical
+                            ? 10
+                            : (modelData.focused ? 36 : 10)
+
+                        implicitHeight: root.vertical
+                            ? (modelData.focused ? 24 : 10)
+                            : (modelData.focused ? 22 : 10)
+
+                        radius: 11
+
                         color: modelData.urgent ? Theme.danger
-                             : modelData.focused ? Qt.alpha(Theme.accent, 0.2)
+                             : modelData.focused ? Theme.accent
                              : dotMa.containsMouse ? Theme.accent2
                              : Qt.alpha(Theme.textFaint, 0.5)
 
-                        Behavior on implicitWidth { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutQuad } }
-                        Behavior on implicitHeight { NumberAnimation { duration: Theme.animMed; easing.type: Easing.OutQuad } }
+                        Behavior on implicitWidth {
+                            NumberAnimation {
+                                duration: Theme.animMed
+                                easing.type: Easing.OutQuad
+                            }
+                        }
+
+                        Behavior on implicitHeight {
+                            NumberAnimation {
+                                duration: Theme.animMed
+                                easing.type: Easing.OutQuad
+                            }
+                        }
+
+                        Text {
+                            anchors.centerIn: parent
+                            visible: dot.modelData.focused && !root.vertical
+                            text: dot.modelData.id
+                            color: Theme.text
+                            font.family: Theme.iconFont
+                            font.pixelSize: 11
+                            font.bold: true
+                        }
 
                         MouseArea {
                             id: dotMa
@@ -869,10 +942,17 @@ Scope {
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             acceptedButtons: Qt.LeftButton | Qt.RightButton
-                            onPressed: { dotTip.suppressed = true; dotTip.shown = false; }
+
+                            onPressed: {
+                                dotTip.suppressed = true
+                                dotTip.shown = false
+                            }
+
                             onClicked: mouse => {
-                                if (mouse.button === Qt.RightButton) root.settingsOpen = !root.settingsOpen;
-                                else dot.modelData.activate();
+                                if (mouse.button === Qt.RightButton)
+                                    root.settingsOpen = !root.settingsOpen
+                                else
+                                    dot.modelData.activate()
                             }
                         }
 
@@ -880,7 +960,8 @@ Scope {
                             id: dotTip
                             hot: dotMa.containsMouse
                             title: "Workspace " + dot.modelData.id
-                                   + (dot.modelData.urgent ? " · urgent" : dot.modelData.focused ? " · focused" : "")
+                                   + (dot.modelData.urgent ? " · urgent"
+                                   : dot.modelData.focused ? " · focused" : "")
                             hints: cfg.tooltipHints ? root.wsHints : ""
                         }
                     }
@@ -891,6 +972,116 @@ Scope {
                 acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
                 onWheel: e => root.run("hyprctl dispatch 'hl.dsp.focus({workspace=\"e"
                                        + (e.angleDelta.y > 0 ? "+1" : "-1") + "\"})'")
+            }
+        }
+    }
+
+    Component {
+        id: windowC
+        Interactive {
+            id: winItem
+            readonly property var win: ToplevelManager.activeToplevel
+            readonly property bool hasWin: win !== null && !!win.activated
+
+            readonly property string rawApp: win ? (win.appId || "") : ""
+            readonly property string appName: {
+                if (!hasWin) return "Pulpit";
+                const parts = rawApp.split(".");
+                let s = parts[parts.length - 1] || "";
+                const l = s.toLowerCase();
+                if (l.startsWith("zen")) return "Zen";
+                if (l === "kitty") return "Kitty";
+                if (l === "gedit") return "Gedit";
+                if (l === "nautilus" || l === "org.gnome.nautilus") return "Pliki";
+                return s ? s.charAt(0).toUpperCase() + s.slice(1) : "Aplikacja";
+            }
+
+            readonly property string rawTitle: win ? (win.title || "") : ""
+            readonly property string cleanTitle: {
+                if (!hasWin) return "Workspace " + (Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : 1);
+                if (!rawTitle) return "";
+                let t = rawTitle.trim();
+                const seps = [" — ", " - ", " | ", " – "];
+                for (let i = 0; i < seps.length; i++) {
+                    const sep = seps[i];
+                    const idx = t.lastIndexOf(sep);
+                    if (idx > 0) {
+                        const tail = t.slice(idx + sep.length).trim().toLowerCase();
+                        if (appName && (tail.includes(appName.toLowerCase()) || appName.toLowerCase().includes(tail))) {
+                            t = t.slice(0, idx).trim();
+                            break;
+                        }
+                    }
+                }
+                return t.toLowerCase() === appName.toLowerCase() ? "" : t;
+            }
+
+            readonly property string glyph: {
+                if (!hasWin) return "\uDB80\uDF5C";
+                const l = rawApp.toLowerCase();
+                if (l.includes("zen") || l.includes("firefox") || l.includes("chrome") || l.includes("brave") || l.includes("browser")) return "\uF269";
+                if (l.includes("kitty") || l.includes("terminal") || l.includes("ghostty") || l.includes("alacritty") || l.includes("foot")) return "\uF120";
+                if (l.includes("gedit") || l.includes("code") || l.includes("nvim") || l.includes("kate")) return "\uF044";
+                if (l.includes("nautilus") || l.includes("thunar") || l.includes("dolphin") || l.includes("files")) return "\uF07B";
+                if (l.includes("discord") || l.includes("vesktop") || l.includes("telegram")) return "\uF086";
+                if (l.includes("spotify")) return "\uF1BC";
+                return "\uDB81\uDE94";
+            }
+
+            implicitWidth: root.vertical ? root.panelThick : winRow.implicitWidth + 16
+            implicitHeight: root.vertical ? 24 : Math.max(root.panelThick - 2, winRow.implicitHeight)
+            Layout.alignment: Qt.AlignCenter
+
+            tip: hasWin ? (appName + (cleanTitle !== "" ? " · " + cleanTitle : "")) : "Pulpit"
+            primaryHint: hasWin ? "Aktywne okno" : "Pulpit"
+
+            RowLayout {
+                id: winRow
+                anchors.centerIn: parent
+                spacing: 6
+
+                Text {
+                    visible: !root.vertical && winItem.glyph !== ""
+                    text: winItem.glyph
+                    color: Theme.accent
+                    font.family: Theme.iconFont
+                    font.pixelSize: root.sz.icon - 2
+                    Layout.alignment: Qt.AlignVCenter
+                    renderType: Text.NativeRendering
+                }
+
+                Text {
+                    text: winItem.appName
+                    color: Theme.text
+                    font.family: Theme.iconFont
+                    font.pixelSize: root.sz.stat
+                    font.bold: true
+                    Layout.alignment: Qt.AlignVCenter
+                    renderType: Text.NativeRendering
+                }
+
+                Text {
+                    visible: !root.vertical && winItem.cleanTitle !== ""
+                    text: "•"
+                    color: Qt.alpha(Theme.text, 0.4)
+                    font.family: Theme.iconFont
+                    font.pixelSize: root.sz.stat
+                    Layout.alignment: Qt.AlignVCenter
+                    renderType: Text.NativeRendering
+                }
+
+                Text {
+                    visible: !root.vertical && winItem.cleanTitle !== ""
+                    text: winItem.cleanTitle
+                    color: Theme.textDim
+                    font.family: Theme.iconFont
+                    font.pixelSize: root.sz.stat
+                    elide: Text.ElideRight
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.maximumWidth: 260
+                    Layout.preferredWidth: Math.min(implicitWidth, 260)
+                    renderType: Text.NativeRendering
+                }
             }
         }
     }

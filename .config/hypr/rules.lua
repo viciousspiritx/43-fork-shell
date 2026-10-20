@@ -1,6 +1,4 @@
 -- Docs: https://wiki.hypr.land/Configuring/Basics/Window-Rules/
--- To check class name, open the app and run:
--- hyprctl clients
 
 hl.layer_rule({
     match = { namespace = "rofi" },
@@ -8,21 +6,17 @@ hl.layer_rule({
     ignore_alpha = 0.15,
 })
 
--- Opacity rules for all windows except fullscreen
+-- Przywrócona globalna reguła krycia z override dla wszystkich okien
 hl.window_rule({
     match = { class = ".*" },
-    opacity = "1.0 override",
-})
-hl.window_rule({
-    match = { class = ".*", fullscreen = true },
-    opacity = "1.0 override",
+    opacity = "0.7 override",
 })
 
---hl.window_rule({
---    name = "brave-opaque",
---    match = { class = "^brave-browser$" },
---    opacity = "1.0 override",
---})
+-- Pełne krycie dla okien w trybie fullscreen
+hl.window_rule({
+    match = { class = ".*", fullscreen = true },
+    opacity = "1.0 1.0 override",
+})
 
 hl.window_rule({
     match = { class = "kitty" },
@@ -58,3 +52,13 @@ hl.window_rule({
     match = { title = "^(Save File)$" },
     float = true,
 })
+
+
+hl.window_rule({
+    name = "nautilus-real-blur",
+    match = { class = "^(org\\.gnome\\.Nautilus)$" },
+    opacity = "0.85 override 0.75 override",
+    opaque = false,
+    xray = true,
+})
+
