@@ -15,11 +15,11 @@ Scope {
     readonly property var defaults: ({
         position: "top", style: "joined", thickness: 30, margin: 4,
         scale: 1.0, bgOpacity: 0.7, border: false,
-        statsMode: "compact", tooltips: true, tooltipHints: true,
-        hidden: "stats,wall,settings",
-        startMods: "stats,ws,window",
+        statsMode: "default", tooltips: true, tooltipHints: true,
+        hidden: "",
+        startMods: "ws,window",
         centerMods: "clock",
-        endMods: "media,update,volume,battery,net,notif,wall,settings,power"
+        endMods: "stats,media,update,volume,bluetooth,battery,net,todo,notif,wall,settings,power"
     })
     readonly property var positions: ["top", "right", "bottom", "left"]
     readonly property var styles: ["floating", "joined", "strip"]
@@ -123,10 +123,14 @@ Scope {
         { id: "ws",       l: "Workspaces" },
         { id: "media",    l: "Media" },
         { id: "volume",   l: "Volume" },
-        { id: "battery",  l: "Battery" },
-        { id: "net",      l: "Network",       cmd: "qs ipc call settings network",
-                                              hint: "Open network settings" },
-        { id: "notif",    l: "Notifications", cmd: "qs ipc call notifications toggle", g: "\uDB80\uDC9A",
+        { id: "battery",   l: "Battery" },
+        { id: "bluetooth", l: "Bluetooth",     cmd: "qs ipc call settings bluetooth",
+                                               hint: "Open Bluetooth settings" },
+        { id: "net",       l: "Network",       cmd: "qs ipc call settings network",
+                                               hint: "Open network settings" },
+        { id: "todo",      l: "To-do",         cmd: "qs ipc call todo toggle", g: "\uF0AE",
+                                               tip: "To-do List", hint: "Toggle tasks" },
+        { id: "notif",     l: "Notifications", cmd: "qs ipc call notifications toggle", g: "\uDB80\uDC9A",
                                               tip: "Notifications", hint: "Toggle notification panel" },
         { id: "wall",     l: "Wallpapers",    cmd: "qs -n -p ~/.config/quickshell/hyprquickpaper", g: "\uDB80\uDEE9",
                                               tip: "Wallpapers", hint: "Open wallpaper picker" },
@@ -262,6 +266,10 @@ Scope {
                                      : netState === "ethernet" ? "\uDB80\uDE00" : "\uDB81\uDDAA"
     readonly property string netTip: netState === "wifi" ? "Wi-Fi connected"
                                    : netState === "ethernet" ? "Ethernet connected" : "Disconnected"
+
+    readonly property bool btPowered: BluetoothState.powered
+    readonly property string btGlyph: btPowered ? "\uDB80\uDCB0" : "\uDB80\uDCB2"
+    readonly property string btTip: btPowered ? "Bluetooth connected / on" : "Bluetooth off"
 
     FileView {
         id: statFile
@@ -832,18 +840,19 @@ Scope {
         }
     }
 
-    // Generic icon button: net / notif / wall / settings / power (driven by moduleDefs)
+    // Generic icon button: net / notif / wall / settings / power / bluetooth / todo (driven by moduleDefs)
     Component {
         id: iconC
         Mod {
             property var def: root.defMap[mid] ?? ({})
             readonly property bool isNet: mid === "net"
+            readonly property bool isBt: mid === "bluetooth"
             baseSize: mid === "power" ? root.sz.power : root.sz.icon
             yOffset: root.iconYOffset
-            text: isNet ? root.netGlyph : (def.g ?? "")
-            tip: isNet ? root.netTip : mid === "notif" ? root.notifTip : (def.tip ?? "")
+            text: isNet ? root.netGlyph : isBt ? root.btGlyph : (def.g ?? "")
+            tip: isNet ? root.netTip : isBt ? root.btTip : mid === "notif" ? root.notifTip : (def.tip ?? "")
             primaryHint: def.hint ?? ""
-            warning: isNet && root.netState === "disconnected"
+            warning: (isNet && root.netState === "disconnected") || (isBt && !root.btPowered)
             onPrimary: if (def.cmd) root.run(def.cmd)
         }
     }

@@ -18,7 +18,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
 
     -- Zastąpiono starą awww i skrypt stabilnym swaybg
-    hl.exec_cmd("swaybg -i /home/marqs/Obrazy/Tapety/uwp4960632.jpeg -m fill &")
+    hl.exec_cmd("swaybg -i /home/marqs/Obrazy/Wallpapers/wp8968660-4k-pc-cool-wallpapers.jpg -m fill &")
     hl.exec_cmd("sleep 2 && qs")
 end)
 

@@ -21,9 +21,11 @@ hl.config({
         rounding = 8,
         blur = {
             enabled = true,
-            size = 5,
-            passes = 2,
-            vibrancy = 0.2,
+            size = 6,
+            passes = 3,
+            vibrancy = 0.3,
+            brightness = 1.05,
+            contrast = 1.0,
         },
         shadow = {
             enabled = true,

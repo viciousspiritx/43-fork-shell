@@ -1,10 +1,27 @@
 -- Docs: https://wiki.hypr.land/Configuring/Basics/Window-Rules/
 
-hl.layer_rule({
-    match = { namespace = "rofi" },
-    blur = true,
-    ignore_alpha = 0.15,
-})
+local blur_layers = {
+    "quickshell",
+    "bar-settings",
+    "powermenu",
+    "todo",
+    "notifications",
+    "wheel",
+    "mediaosd",
+    "mediaosd-settings",
+    "settings",
+    "rofi",
+}
+
+for _, ns in ipairs(blur_layers) do
+    hl.layer_rule({
+        name = "blur-" .. ns,
+        match = { namespace = ns },
+        blur = true,
+        blur_popups = true,
+        ignore_alpha = 0.2,
+    })
+end
 
 -- Przywrócona globalna reguła krycia z override dla wszystkich okien
 hl.window_rule({
@@ -53,12 +70,9 @@ hl.window_rule({
     float = true,
 })
 
-
 hl.window_rule({
-    name = "nautilus-real-blur",
-    match = { class = "^(org\\.gnome\\.Nautilus)$" },
-    opacity = "0.85 override 0.75 override",
+    name = "file-managers-blur",
+    match = { class = "^(org\\.gnome\\.Nautilus|nautilus|thunar)$" },
+    opacity = "0.85 0.75 override",
     opaque = false,
-    xray = true,
 })
-

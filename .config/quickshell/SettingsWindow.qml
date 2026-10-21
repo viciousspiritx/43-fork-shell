@@ -12,6 +12,7 @@ PanelWindow {
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.namespace: "settings"
     WlrLayershell.keyboardFocus: root.showing ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
     mask: Region {
@@ -174,6 +175,10 @@ PanelWindow {
         }
         function network(): void {
             root.selectedIndex = 3
+            root.show()
+        }
+        function bluetooth(): void {
+            root.selectedIndex = 4
             root.show()
         }
         function snapTop(): void {
