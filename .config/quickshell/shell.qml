@@ -1,3 +1,4 @@
+import "app_launcher"
 import Quickshell
 
 ShellRoot {
@@ -9,4 +10,5 @@ ShellRoot {
     Bar {}
     Todo {}
     Wheel {}
+    AppLauncher {}
 }

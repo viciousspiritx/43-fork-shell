@@ -11,6 +11,7 @@ local blur_layers = {
     "mediaosd-settings",
     "settings",
     "rofi",
+    "quickshell-launcher",
 }
 
 for _, ns in ipairs(blur_layers) do

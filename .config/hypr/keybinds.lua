@@ -7,7 +7,6 @@ local home = os.getenv("HOME")
 local menu = "rofi -show drun"
 
 hl.bind(mainMod .. " + T", hl.dsp.exec_cmd(terminal)) 
-hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("pgrep -x rofi >/dev/null && pkill -x rofi || " .. menu)) -- Toggle launcher
 hl.bind(mainMod .. " + S", hl.dsp.exec_cmd("qs ipc call wheel toggle")) -- Wheel launcher
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd("zen-browser")) -- Zen Browser
@@ -136,3 +135,5 @@ hl.bind("XF86AudioMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ to
 hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"), { locked = true })
 hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
+hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("qs ipc call applauncher toggle")) -- AppLauncher
+hl.bind(mainMod .. " + P", hl.dsp.exec_cmd("nautilus")) -- Nautilus

@@ -6,6 +6,7 @@ import Quickshell.Wayland
 import Quickshell.Hyprland
 import Quickshell.Services.Pipewire
 import Quickshell.Services.UPower
+import Quickshell.Services.SystemTray
 
 Scope {
     id: root
@@ -19,7 +20,7 @@ Scope {
         hidden: "",
         startMods: "ws,window",
         centerMods: "clock",
-        endMods: "stats,media,update,volume,bluetooth,battery,net,todo,notif,wall,settings,power"
+        endMods: "stats,media,update,tray,volume,bluetooth,battery,net,todo,notif,wall,settings,power"
     })
     readonly property var positions: ["top", "right", "bottom", "left"]
     readonly property var styles: ["floating", "joined", "strip"]
@@ -139,13 +140,14 @@ Scope {
         { id: "power",    l: "Power",         cmd: "qs ipc call powermenu toggle", g: "\u23FB",
                                               tip: "Power menu", hint: "Open", fixed: true },
         { id: "update",   l: "Cachy-Update" },
+        { id: "tray", l: "System Tray" },
         { id: "window",   l: "Active Window" }
     ]
     readonly property var moduleIds: moduleDefs.map(d => d.id)
     readonly property var defMap: moduleDefs.reduce((m, d) => { m[d.id] = d; return m; }, {})
     readonly property var comps: ({
         stats: statsC, ws: wsC, window: windowC, media: mediaC, volume: volumeC, battery: batteryC,
-        update: updateC, icon: iconC
+        update: updateC, tray: trayC, icon: iconC
     })
 
     function csv(str) { return str === "" ? [] : str.split(","); }
@@ -587,19 +589,29 @@ Scope {
     }
 
     component Slot: Loader {
-        required property string modelData
-        property Component clockComp: null
-        visible: root.modVisible(modelData)
-        Layout.alignment: Qt.AlignCenter
-        sourceComponent: modelData === "clock" ? clockComp : (root.comps[modelData] ?? root.comps.icon)
-        onLoaded: if (item.mid !== undefined) item.mid = modelData
+    required property string modelData
+    property Component clockComp: null
+    property var trayRoot: null
+
+    visible: root.modVisible(modelData)
+    Layout.alignment: Qt.AlignCenter
+    sourceComponent: modelData === "clock" ? clockComp : (root.comps[modelData] ?? root.comps.icon)
+
+    onLoaded: {
+        if (item.mid !== undefined)
+            item.mid = modelData;
+
+        if (modelData === "tray" && item.trayRoot !== undefined)
+            item.trayRoot = trayRoot;
     }
+}
 
     // One of the three bar sections: a rounded panel holding a Lane of Slots
     component Panel: Rectangle {
         id: panel
         property var model: []
         property Component clockComp: null
+        property var trayRoot: null
         readonly property Item lane: laneItem
 
         visible: (root.vertical ? laneItem.implicitHeight : laneItem.implicitWidth) > 0
@@ -615,7 +627,10 @@ Scope {
             anchors.centerIn: parent
             Repeater {
                 model: panel.model
-                delegate: Slot { clockComp: panel.clockComp }
+               delegate: Slot {
+    clockComp: panel.clockComp
+    trayRoot: panel.trayRoot
+}
             }
         }
     }
@@ -817,6 +832,35 @@ Scope {
 
     // ───────────────────────── Module components ─────────────────────────
     // Original Cachy-Update icon; opens the update tool in Kitty.
+        Component {
+    id: trayC
+
+    Item {
+        id: trayHost
+
+        property var trayRoot: null
+
+        implicitWidth: root.vertical
+            ? root.panelThick
+            : trayLane.implicitWidth + 8
+
+        implicitHeight: root.vertical
+            ? trayLane.implicitHeight + 8
+            : root.panelThick - 2
+
+        Layout.alignment: Qt.AlignCenter
+
+        Lane {
+            id: trayLane
+            anchors.centerIn: parent
+            gap: 4
+
+            Tray {
+                barRoot: trayHost.trayRoot
+            }
+        }
+    }
+}
     Component {
         id: updateC
         Interactive {
@@ -1329,15 +1373,17 @@ Scope {
                 }
 
                 Panel {
-                    model: root.startList
-                    anchors.left: frame.left
-                    anchors.top: frame.top
-                }
+    model: root.startList
+    trayRoot: bar
+    anchors.left: frame.left
+    anchors.top: frame.top
+}
 
                 Panel {
                     id: clockPanel
                     model: root.centerList
                     clockComp: clockC
+                    trayRoot: bar
                     anchors.horizontalCenter: root.vertical ? undefined : frame.horizontalCenter
                     anchors.verticalCenter: root.vertical ? frame.verticalCenter : undefined
                     anchors.top: root.vertical ? undefined : frame.top
@@ -1534,12 +1580,13 @@ Scope {
                 }
 
                 Panel {
-                    model: root.endList
-                    anchors.right: root.vertical ? undefined : frame.right
-                    anchors.bottom: root.vertical ? frame.bottom : undefined
-                    anchors.top: root.vertical ? undefined : frame.top
-                    anchors.left: root.vertical ? frame.left : undefined
-                }
+    model: root.endList
+    trayRoot: bar
+    anchors.right: root.vertical ? undefined : frame.right
+    anchors.bottom: root.vertical ? frame.bottom : undefined
+    anchors.top: root.vertical ? undefined : frame.top
+    anchors.left: root.vertical ? frame.left : undefined
+}
             }
         }
     }
